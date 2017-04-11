@@ -1,0 +1,6 @@
+{
+    "Tenantname": "admin",
+    "Username": "admin",   
+    "Password": "Dtm9qfrwGkPkgbbMWGbUNPayr",
+    "OS_AUTH_URL": "http://172.22.131.17:5000/v2.0"
+}
