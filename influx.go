@@ -27,7 +27,7 @@ func (d *db) init() {
 	file.Close()
 }
 
-func (d *db) queryInfo(id string) {
+func (d *db) queryInfo(id string, command string) []client.Result {
 	var res []client.Result
 	log.Println("ID:", id)
 	log.Println("DB URL:", d.Url)
@@ -39,7 +39,7 @@ func (d *db) queryInfo(id string) {
 	})
 	checkError(err)
 	q := client.Query{
-		Command:  "drop series where uuid = '" + id + "'",
+		Command:  command + id,
 		Database: d.Db,
 	}
 	if response, err := c.Query(q); err == nil {
@@ -50,6 +50,8 @@ func (d *db) queryInfo(id string) {
 	} else {
 		log.Println("err2", err)
 	}
+	//log.Printf("%T", res[0].Series[0].Values)
 	log.Println("Success")
 	c.Close()
+	return res //[0].Series[0].Values
 }

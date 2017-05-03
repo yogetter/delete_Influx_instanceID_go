@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -24,16 +23,6 @@ func (o *openstackConf) init() {
 	decoder := json.NewDecoder(data)
 	err := decoder.Decode(o)
 	checkError(err)
-}
-
-func (o *openstackConf) checkInstances(i []interface{}) bool {
-	live_instances := o.insertInstance(i)
-	// Check live_instance and last_instnace
-	if reflect.DeepEqual(last_instances, live_instances) {
-		return true
-	} else {
-		return false
-	}
 }
 
 func (o *openstackConf) getTokenUrl(json_data []byte) (string, string) {
@@ -87,9 +76,9 @@ func (o *openstackConf) getInstances(influx *db) []interface{} {
 func deleteData(influx *db) {
 	// Found ID should be delete
 	flag := true
-	for _, data1 := range last_instances {
+	for _, data1 := range db_instances {
 		for _, data2 := range live_instances {
-			if data1 == data2 {
+			if data1[1] == data2 {
 				flag = false
 				log.Println("same:", data1)
 				break
@@ -98,11 +87,19 @@ func deleteData(influx *db) {
 		if flag {
 			log.Println("Delete id:", data1)
 			log.Println("influx Url:", influx.Url)
-			influx.queryInfo(data1)
+			influx.queryInfo("'"+data1[1].(string)+"'", "drop series where uuid = ")
 		}
 		flag = true
 	}
 }
+func queryData(influx *db) {
+	tmp_data := influx.queryInfo("uuid", "show tag values from vm_usage with key = ")
+	if tmp_data[0].Series != nil {
+		//log.Println("Tmp_data:", tmp_data[0], "value:", tmp_data[0].Series)
+		db_instances = tmp_data[0].Series[0].Values
+	}
+}
+
 func checkError(err error) {
 	if err != nil {
 		log.Fatal(err)
@@ -110,7 +107,7 @@ func checkError(err error) {
 }
 
 var run openstackConf
-var last_instances []string
+var db_instances [][]interface{}
 var live_instances []string
 var influx db
 
@@ -120,16 +117,12 @@ func main() {
 	run = openstackConf{}
 	run.init()
 	for {
-		live_data := run.getInstances(&influx)
-		live_instances = run.insertInstance(live_data)
-		log.Println("Last:", last_instances)
+		rep_data := run.getInstances(&influx)
+		live_instances = run.insertInstance(rep_data)
+		queryData(&influx)
+		log.Println("InDb:", db_instances)
 		log.Println("Live:", live_instances)
-		if last_instances != nil {
-			if !run.checkInstances(live_data) {
-				deleteData(&influx)
-			}
-		}
-		last_instances = live_instances
+		deleteData(&influx)
 		time.Sleep(60 * time.Second)
 	}
 }
