@@ -14,12 +14,12 @@ type db struct {
 	Password string
 }
 
-func (d *db) init() {
+func (d *db) Init() {
 	//read config
 	file, _ := os.Open("db_conf.json")
 	decoder := json.NewDecoder(file)
 	err := decoder.Decode(d)
-	checkError(err)
+	CheckError(err)
 	log.Println("DB URL:", d.Url)
 	log.Println("DB Name:", d.Db)
 	log.Println("DB Username:", d.Username)
@@ -37,7 +37,7 @@ func (d *db) queryInfo(id string, command string) []client.Result {
 		Username: d.Username,
 		Password: d.Password,
 	})
-	checkError(err)
+	CheckError(err)
 	q := client.Query{
 		Command:  command + id,
 		Database: d.Db,
